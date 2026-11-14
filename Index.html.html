@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Estoque — Protótipo</title>
+<style>
+:root{
+  --navy:#17324d; --blue:#245b82; --teal:#147d72; --teal-dark:#0e625a;
+  --bg:#f3f6f8; --surface:#fff; --text:#172b3a; --muted:#526575;
+  --border:#c7d2dc; --warning-bg:#fff4d6; --warning:#744b00;
+  --success-bg:#e4f5ee; --success:#145c42; --danger:#a52b2b;
+  --focus:#f0a51b; --shadow:0 12px 32px rgba(23,50,77,.09);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 Arial,Helvetica,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.app{min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--navy);color:#fff;padding:17px 24px}
+.topbar-inner{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:19px}
+.brand-mark{width:38px;height:38px;border-radius:11px;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:800}
+.top-note{font-size:13px;color:#d9e5ee}
+main{width:min(100% - 32px,1000px);margin:36px auto;flex:1}
+.screen{display:none}
+.screen.active{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:clamp(22px,4vw,38px)}
+.login-wrap{max-width:510px;margin:5vh auto}
+.eyebrow{color:var(--teal-dark);font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+h1{font-size:clamp(25px,4vw,34px);line-height:1.2;margin:8px 0 10px;color:var(--navy)}
+h2{font-size:25px;color:var(--navy);margin:8px 0}
+p{color:var(--muted);margin:8px 0 22px}
+label{display:block;font-weight:700;margin:16px 0 7px}
+input,select{width:100%;min-height:48px;padding:11px 13px;border:1px solid #8799a8;border-radius:9px;background:#fff;color:var(--text)}
+.help{font-size:13px;color:var(--muted);margin-top:6px}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+.btn{min-height:48px;min-width:120px;padding:11px 18px;border:0;border-radius:9px;font-weight:700}
+.btn-primary{background:var(--teal);color:white}
+.btn-primary:hover{background:var(--teal-dark)}
+.btn-secondary{background:#e8eef3;color:var(--navy);border:1px solid var(--border)}
+.btn-quiet{background:transparent;color:var(--blue);border:1px solid var(--blue)}
+.full{width:100%}
+.demo-note{margin-top:18px;padding:12px 14px;background:#eef4f8;border-radius:9px;color:#344d60;font-size:13px}
+.error{display:none;margin-top:14px;padding:11px 13px;background:#fff0f0;border:1px solid #e6b7b7;border-radius:8px;color:var(--danger);font-weight:600}
+.error.show{display:block}
+.dashboard-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:22px}
+.user-pill{background:#eaf1f5;color:var(--navy);border-radius:30px;padding:8px 13px;font-size:13px;font-weight:700}
+.menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+.menu-tile{min-height:155px;text-align:left;padding:20px;border:1px solid var(--border);border-radius:14px;background:#fff;color:var(--text)}
+.menu-tile:hover{border-color:var(--teal);box-shadow:0 5px 18px rgba(20,125,114,.1)}
+.tile-icon{width:42px;height:42px;border-radius:12px;background:#e5f3f0;color:var(--teal-dark);display:grid;place-items:center;font-size:22px;margin-bottom:12px}
+.menu-tile strong{display:block;color:var(--navy);font-size:17px}
+.menu-tile span:last-child{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+.breadcrumb{font-size:13px;color:var(--muted);margin-bottom:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.field-full{grid-column:1/-1}
+.inline-info{margin-top:10px;padding:11px 13px;border-radius:9px;background:#edf3f7;color:#334e62;font-size:14px}
+.segmented{display:flex;gap:8px;margin:16px 0 20px}
+.segmented button{flex:1;min-height:46px;border:1px solid var(--border);background:#fff;border-radius:9px;color:var(--navy);font-weight:700}
+.segmented button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.section-divider{border:0;border-top:1px solid #e0e6eb;margin:24px 0}
+.result-banner{display:flex;gap:13px;align-items:flex-start;background:var(--success-bg);color:var(--success);padding:16px;border-radius:12px;margin:20px 0}
+.result-banner strong{display:block;font-size:17px}
+.result-banner p{margin:3px 0 0;color:var(--success)}
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+.stat{padding:15px;border:1px solid var(--border);border-radius:11px;background:#fff}
+.stat span{display:block;font-size:13px;color:var(--muted)}
+.stat strong{display:block;font-size:20px;color:var(--navy);margin-top:4px}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+table{width:100%;border-collapse:collapse;min-width:500px}
+th,td{text-align:left;padding:13px 15px;border-bottom:1px solid #e4e9ed}
+th{background:#f0f4f7;color:var(--navy);font-size:13px}
+tr:last-child td{border-bottom:0}
+.status{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:7px;font-size:12px;font-weight:700}
+.status.warning{background:var(--warning-bg);color:var(--warning)}
+.status.ok{background:var(--success-bg);color:var(--success)}
+.status .symbol{font-size:15px}
+.footer{max-width:1000px;width:calc(100% - 32px);margin:0 auto 20px;color:#657786;font-size:12px;display:flex;justify-content:space-between;gap:12px}
+@media(max-width:700px){
+ main{margin:22px auto}
+ .menu-grid{grid-template-columns:1fr}
+ .menu-tile{min-height:112px}
+ .dashboard-head{display:block}
+ .user-pill{display:inline-block;margin-top:8px}
+ .form-grid{grid-template-columns:1fr}
+ .field-full{grid-column:auto}
+ .summary-grid{grid-template-columns:1fr}
+ .topbar{padding:14px 16px}
+ .top-note{display:none}
+ .actions .btn{flex:1}
+}
+@media(min-width:701px){.login-wrap{margin-top:7vh}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">CE</span><span>Controle de Estoque</span></div>
+    <div class="top-note">Protótipo acadêmico · Dados fictícios</div>
+  </div>
+</header>
+<main>
+  <!-- TELA 1 -->
+  <section id="loginScreen" class="screen active" aria-labelledby="loginTitle">
+    <div class="card login-wrap">
+      <div class="eyebrow">Acesso ao sistema</div>
+      <h1 id="loginTitle">Bem-vindo!</h1>
+      <p>Entre para organizar produtos, acompanhar o estoque e registrar vendas.</p>
+      <form id="loginForm">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="username" value="usuario@exemplo.com" required>
+        <label for="password">Senha</label>
+        <input id="password" type="password" autocomplete="current-password" value="demonstracao" required>
+        <div id="loginError" class="error" role="alert">Não foi possível entrar. Verifique seus dados e tente novamente.</div>
+        <div class="actions"><button class="btn btn-primary full" type="submit">Entrar</button></div>
+      </form>
+      <div class="demo-note"><strong>Acesso demonstrativo:</strong> utilize os dados fictícios já preenchidos e selecione “Entrar”.</div>
+    </div>
+  </section>
+
+  <!-- MENU -->
+  <section id="menuScreen" class="screen" aria-labelledby="menuTitle">
+    <div class="dashboard-head">
+      <div><div class="eyebrow">Menu principal</div><h1 id="menuTitle">O que deseja fazer?</h1><p>Escolha uma atividade para continuar.</p></div>
+      <span class="user-pill">● Funcionário de demonstração</span>
+    </div>
+    <div class="menu-grid">
+      <button class="menu-tile" type="button" onclick="showOperation('entrada')">
+        <span class="tile-icon" aria-hidden="true">＋</span><strong>Registrar entrada</strong><span>Adicionar unidades ao estoque</span>
+      </button>
+      <button class="menu-tile" type="button" onclick="showOperation('venda')">
+        <span class="tile-icon" aria-hidden="true">▣</span><strong>Registrar venda</strong><span>Dar baixa nos produtos vendidos</span>
+      </button>
+      <button class="menu-tile" type="button" onclick="showResults()">
+        <span class="tile-icon" aria-hidden="true">▤</span><strong>Consultar estoque</strong><span>Ver quantidades e alertas</span>
+      </button>
+    </div>
+    <div class="actions"><button class="btn btn-secondary" type="button" onclick="logout()">Sair</button></div>
+  </section>
+
+  <!-- TELA 2 -->
+  <section id="operationScreen" class="screen" aria-labelledby="operationTitle">
+    <div class="breadcrumb">Menu principal / <span id="breadcrumbOperation">Registrar venda</span></div>
+    <div class="card">
+      <div class="eyebrow">Movimentação de estoque</div>
+      <h1 id="operationTitle">Registrar movimentação</h1>
+      <p>Informe os dados abaixo. Os campos marcados como obrigatórios precisam ser preenchidos.</p>
+      <div class="segmented" role="group" aria-label="Tipo de operação">
+        <button id="entryTab" type="button" aria-pressed="false" onclick="setOperation('entrada')">Entrada</button>
+        <button id="saleTab" type="button" aria-pressed="true" onclick="setOperation('venda')">Venda</button>
+      </div>
+      <form id="operationForm">
+        <div class="form-grid">
+          <div class="field-full">
+            <label for="product">Produto *</label>
+            <select id="product" required onchange="updateStockInfo()">
+              <option value="arroz">Arroz tipo 1 — 5 kg</option>
+              <option value="leite">Leite integral — 1 litro</option>
+              <option value="feijao">Feijão carioca — 1 kg</option>
+            </select>
+          </div>
+          <div>
+            <label for="quantity">Quantidade *</label>
+            <input id="quantity" type="number" min="1" step="1" value="2" required>
+            <div class="help">Informe um número inteiro maior que zero.</div>
+          </div>
+          <div>
+            <label for="stockAvailable">Estoque disponível</label>
+            <input id="stockAvailable" type="text" value="12 unidades" readonly aria-describedby="stockHelp">
+            <div class="help" id="stockHelp">Saldo antes da operação.</div>
+          </div>
+          <div class="field-full" id="observationField" style="display:none">
+            <label for="observation">Observação</label>
+            <input id="observation" type="text" placeholder="Ex.: reposição de fornecedor">
+          </div>
+        </div>
+        <div id="operationError" class="error" role="alert"></div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Confirmar operação</button>
+          <button class="btn btn-secondary" type="button" onclick="showMenu()">Voltar ao menu</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- TELA 3 -->
+  <section id="resultsScreen" class="screen" aria-labelledby="resultsTitle">
+    <div class="breadcrumb">Menu principal / Resultados</div>
+    <div class="card">
+      <div class="eyebrow">Resumo do estoque</div>
+      <h1 id="resultsTitle">Resultado da operação</h1>
+      <div id="resultBanner" class="result-banner" role="status" aria-live="polite">
+        <span aria-hidden="true" style="font-size:25px">✓</span>
+        <div><strong id="resultHeading">Venda registrada com sucesso.</strong><p id="resultDescription">O estoque foi atualizado.</p></div>
+      </div>
+      <div class="summary-grid">
+        <div class="stat"><span>Produto movimentado</span><strong id="resultProduct">Arroz tipo 1 — 5 kg</strong></div>
+        <div class="stat"><span>Quantidade</span><strong id="resultQuantity">2 unidades</strong></div>
+        <div class="stat"><span>Saldo atualizado</span><strong id="resultBalance">10 unidades</strong></div>
+      </div>
+      <hr class="section-divider">
+      <h2>Produtos que precisam de reposição</h2>
+      <p>Itens com quantidade igual ou inferior ao estoque mínimo definido.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Produto</th><th>Disponível</th><th>Estoque mínimo</th><th>Situação</th></tr></thead>
+          <tbody id="stockRows">
+            <tr><td>Leite integral — 1 litro</td><td>3 unidades</td><td>5 unidades</td><td><span class="status warning"><span class="symbol" aria-hidden="true">⚠</span> Atenção: estoque baixo</span></td></tr>
+            <tr><td>Arroz tipo 1 — 5 kg</td><td>10 unidades</td><td>5 unidades</td><td><span class="status ok"><span class="symbol" aria-hidden="true">✓</span> Estoque adequado</span></td></tr>
+            <tr><td>Feijão carioca — 1 kg</td><td>8 unidades</td><td>4 unidades</td><td><span class="status ok"><span class="symbol" aria-hidden="true">✓</span> Estoque adequado</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="showOperation('venda')">Nova movimentação</button>
+        <button class="btn btn-secondary" type="button" onclick="showMenu()">Voltar ao menu</button>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="footer"><span>Protótipo navegável para avaliação acadêmica</span><span>Informações e credenciais fictícias</span></footer>
+</div>
+<script>
+const inventory = {
+  arroz:{name:'Arroz tipo 1 — 5 kg',qty:12,min:5},
+  leite:{name:'Leite integral — 1 litro',qty:3,min:5},
+  feijao:{name:'Feijão carioca — 1 kg',qty:8,min:4}
+};
+let operation='venda';
+let lastMovement={name:inventory.arroz.name,quantity:2,qty:10,type:'venda'};
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.getElementById('loginForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  if(email==='usuario@exemplo.com' && password==='demonstracao'){
+    document.getElementById('loginError').classList.remove('show');
+    showScreen('menuScreen');
+  }else document.getElementById('loginError').classList.add('show');
+});
+function logout(){showScreen('loginScreen');}
+function showMenu(){showScreen('menuScreen');}
+function showOperation(type){
+  setOperation(type);
+  document.getElementById('quantity').value=2;
+  document.getElementById('operationError').classList.remove('show');
+  updateStockInfo();
+  showScreen('operationScreen');
+}
+function setOperation(type){
+  operation=type;
+  document.getElementById('entryTab').setAttribute('aria-pressed',String(type==='entrada'));
+  document.getElementById('saleTab').setAttribute('aria-pressed',String(type==='venda'));
+  document.getElementById('breadcrumbOperation').textContent=type==='entrada'?'Registrar entrada':'Registrar venda';
+  document.getElementById('observationField').style.display=type==='entrada'?'block':'none';
+  document.getElementById('quantity').value=2;
+  updateStockInfo();
+}
+function updateStockInfo(){
+  const p=inventory[document.getElementById('product').value];
+  document.getElementById('stockAvailable').value=p.qty+' unidades';
+}
+document.getElementById('operationForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const key=document.getElementById('product').value;
+  const p=inventory[key];
+  const qty=Number(document.getElementById('quantity').value);
+  const err=document.getElementById('operationError');
+  err.classList.remove('show');
+  if(!Number.isInteger(qty)||qty<=0){
+    err.textContent='Quantidade inválida. Informe um número inteiro maior que zero.';
+    err.classList.add('show');return;
+  }
+  if(operation==='venda' && qty>p.qty){
+    err.textContent='Estoque insuficiente. Reduza a quantidade ou registre uma entrada.';
+    err.classList.add('show');return;
+  }
+  p.qty=operation==='venda'?p.qty-qty:p.qty+qty;
+  lastMovement={name:p.name,quantity:qty,qty:p.qty,type:operation};
+  renderResults();
+  showScreen('resultsScreen');
+});
+function renderResults(){
+  const m=lastMovement;
+  document.getElementById('resultsTitle').textContent=m.type==='venda'?'Resultado da venda':'Resultado da entrada';
+  document.getElementById('resultHeading').textContent=m.type==='venda'?'Venda registrada com sucesso.':'Entrada registrada com sucesso.';
+  document.getElementById('resultDescription').textContent='A movimentação foi concluída e o estoque foi atualizado.';
+  document.getElementById('resultProduct').textContent=m.name;
+  document.getElementById('resultQuantity').textContent=m.quantity+' unidades';
+  document.getElementById('resultBalance').textContent=m.qty+' unidades';
+  const rows=Object.values(inventory).map(p=>{
+    const low=p.qty<=p.min;
+    return `<tr><td>${p.name}</td><td>${p.qty} unidades</td><td>${p.min} unidades</td><td><span class="status ${low?'warning':'ok'}"><span class="symbol" aria-hidden="true">${low?'⚠':'✓'}</span>${low?'Atenção: estoque baixo':'Estoque adequado'}</span></td></tr>`;
+  }).join('');
+  document.getElementById('stockRows').innerHTML=rows;
+}
+function showResults(){renderResults();showScreen('resultsScreen');}
+</script>
+</body>
+</html>
