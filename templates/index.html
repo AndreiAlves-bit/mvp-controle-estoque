@@ -36,11 +36,12 @@ body {
   transition: background .2s, color .2s;
 }
 
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 
 button:focus-visible,
 input:focus-visible,
+textarea:focus-visible,
 select:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
@@ -165,7 +166,7 @@ label {
   margin: 16px 0 7px;
 }
 
-input, select {
+input, select, textarea {
   width: 100%;
   min-height: 48px;
   padding: 11px 13px;
@@ -256,7 +257,7 @@ input, select {
 
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-top: 24px;
 }
@@ -574,11 +575,6 @@ body.dark-mode .btn-primary {
       </div>
     </form>
 
-    <div class="demo-note">
-      <strong>Acesso demonstrativo:</strong>
-      utilize os dados fictícios já preenchidos
-      e selecione “Entrar”.
-    </div>
   </div>
 </section>
 
@@ -592,11 +588,17 @@ body.dark-mode .btn-primary {
       <p>Escolha uma atividade para continuar.</p>
     </div>
     <span class="user-pill">
-      ● Funcionário de demonstração
+      ● <span id="loggedUser">Usuário autenticado</span>
     </span>
   </div>
 
   <div class="menu-grid">
+    <button class="menu-tile" type="button" onclick="showProductRegistration()">
+      <span class="tile-icon" aria-hidden="true">▦</span>
+      <strong>Cadastrar produto</strong>
+      <span>Adicionar novos itens ao catálogo</span>
+    </button>
+
     <button class="menu-tile" type="button"
             onclick="showOperation('entrada')">
       <span class="tile-icon" aria-hidden="true">＋</span>
@@ -622,6 +624,44 @@ body.dark-mode .btn-primary {
   <div class="actions">
     <button class="btn btn-secondary" type="button"
             onclick="logout()">Sair</button>
+  </div>
+</section>
+
+<!-- CADASTRO DE PRODUTO -->
+<section id="productScreen" class="screen" aria-labelledby="productTitle">
+  <div class="breadcrumb">Menu principal / Cadastrar produto</div>
+  <div class="card">
+    <div class="eyebrow">Catálogo de produtos</div>
+    <h1 id="productTitle">Cadastrar produto</h1>
+    <p>Preencha os dados para disponibilizar o produto nas movimentações de estoque.</p>
+    <form id="productForm">
+      <label for="newName">Nome do produto *</label>
+      <input id="newName" name="nome" maxlength="100" required>
+      <label for="newDescription">Descrição</label>
+      <input id="newDescription" name="descricao" maxlength="200">
+      <div class="form-grid">
+        <div>
+          <label for="newPrice">Preço (R$) *</label>
+          <input id="newPrice" type="number" min="0" step="0.01" value="0" required>
+        </div>
+        <div>
+          <label for="newQuantity">Quantidade inicial *</label>
+          <input id="newQuantity" type="number" min="0" step="1" value="0" required>
+        </div>
+        <div>
+          <label for="newMinimum">Estoque mínimo *</label>
+          <input id="newMinimum" type="number" min="0" step="1" value="0" required>
+        </div>
+      </div>
+      <div id="productError" class="error" role="alert"></div>
+      <div id="productSuccess" class="result-banner" role="status" style="display:none">
+        Produto cadastrado com sucesso! Ele já pode ser selecionado nas movimentações.
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">Cadastrar produto</button>
+        <button class="btn btn-secondary" type="button" onclick="showMenu()">Voltar ao menu</button>
+      </div>
+    </form>
   </div>
 </section>
 
@@ -786,7 +826,7 @@ body.dark-mode .btn-primary {
 
 <footer class="footer">
   <span>Projeto acadêmico · Flask e SQLite</span>
-  <span>Login demonstrativo · Controle de estoque</span>
+  <span>Controle de estoque · Acesso autenticado</span>
 </footer>
 
 </div>
@@ -901,39 +941,114 @@ async function carregarProdutos() {
   }
 }
 
-// LOGIN DEMONSTRATIVO
-document.getElementById('loginForm')
-  .addEventListener('submit', async e => {
-    e.preventDefault();
-
-    const email = document.getElementById('email')
-      .value.trim();
-
-    const password = document.getElementById('password')
-      .value;
-
-    if (
-      email === 'usuario@exemplo.com' &&
-      password === 'demonstracao'
-    ) {
-      document.getElementById('loginError')
-        .classList.remove('show');
-
-      await carregarProdutos();
+// LOGIN COM SESSÃO NO SERVIDOR
+async function conferirSessao() {
+  try {
+    const resposta = await fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!resposta.ok) return;
+    const dados = await resposta.json();
+    if (dados.autenticado) {
+      document.getElementById('loggedUser').textContent = dados.usuario.nome;
       showScreen('menuScreen');
-    } else {
-      document.getElementById('loginError')
-        .classList.add('show');
     }
-  });
+  } catch (erro) {
+    console.warn('Não foi possível verificar a sessão.', erro);
+  }
+}
 
-function logout() {
-  showScreen('loginScreen');
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const aviso = document.getElementById('loginError');
+  const botao = e.currentTarget.querySelector('button[type="submit"]');
+  aviso.classList.remove('show');
+  botao.disabled = true;
+  try {
+    const resposta = await fetch('/api/login', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('email').value.trim(),
+        senha: document.getElementById('password').value
+      })
+    });
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || 'Falha no login.');
+    document.getElementById('loggedUser').textContent = dados.usuario.nome;
+    document.getElementById('password').value = '';
+    showScreen('menuScreen');
+  } catch (erro) {
+    aviso.textContent = erro.message || 'Não foi possível entrar.';
+    aviso.classList.add('show');
+  } finally {
+    botao.disabled = false;
+  }
+});
+
+async function logout() {
+  try {
+    const resposta = await fetch('/api/logout', {
+      method: 'POST', credentials: 'same-origin'
+    });
+    if (!resposta.ok) throw new Error('Não foi possível encerrar a sessão.');
+    showScreen('loginScreen');
+  } catch (erro) {
+    alert(erro.message);
+  }
 }
 
 function showMenu() {
   showScreen('menuScreen');
 }
+
+// CADASTRO DE PRODUTOS
+function showProductRegistration() {
+  document.getElementById('productError').classList.remove('show');
+  document.getElementById('productSuccess').style.display = 'none';
+  showScreen('productScreen');
+}
+
+document.getElementById('productForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const botao = form.querySelector('button[type="submit"]');
+  const erro = document.getElementById('productError');
+  const sucesso = document.getElementById('productSuccess');
+  erro.classList.remove('show');
+  sucesso.style.display = 'none';
+  const nome = document.getElementById('newName').value.trim();
+  const descricao = document.getElementById('newDescription').value.trim();
+  const preco = Number(document.getElementById('newPrice').value);
+  const quantidade = Number(document.getElementById('newQuantity').value);
+  const estoque_minimo = Number(document.getElementById('newMinimum').value);
+  if (!nome || !Number.isFinite(preco) || preco < 0 ||
+      !Number.isSafeInteger(quantidade) || quantidade < 0 ||
+      !Number.isSafeInteger(estoque_minimo) || estoque_minimo < 0) {
+    erro.textContent = 'Confira o nome, o preço e as quantidades informadas.';
+    erro.classList.add('show');
+    return;
+  }
+  botao.disabled = true;
+  try {
+    const resposta = await fetch('/produtos', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, descricao, preco, quantidade, estoque_minimo })
+    });
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || 'Falha ao cadastrar produto.');
+    form.reset();
+    sucesso.style.display = 'flex';
+    await carregarProdutos();
+  } catch (falha) {
+    erro.textContent = falha.message || 'Erro de comunicação com o servidor.';
+    erro.classList.add('show');
+  } finally {
+    botao.disabled = false;
+  }
+});
+
+conferirSessao();
 
 // MOVIMENTAÇÕES
 async function showOperation(type) {
