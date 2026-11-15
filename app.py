@@ -1,7 +1,7 @@
 
 import os
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify
 from flask_login import LoginManager
 from extensions import db
 
@@ -32,6 +32,7 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+
 # Importação dos modelos
 from models import (
     Produto,
@@ -42,6 +43,7 @@ from models import (
 )
 
 
+# Carregamento do usuário autenticado
 @login_manager.user_loader
 def carregar_usuario(usuario_id):
     try:
@@ -63,6 +65,7 @@ from routes.produto_routes import produto_routes
 from routes.movimentacao_routes import movimentacao_routes
 from routes.auth_routes import auth_routes
 
+
 # Registro dos Blueprints
 app.register_blueprint(produto_routes)
 app.register_blueprint(movimentacao_routes)
@@ -75,9 +78,19 @@ def index():
     return render_template("index.html")
 
 
-# Inicialização das tabelas
+# Inicialização do banco de dados
+# Executada também quando o Gunicorn inicia a aplicação
 with app.app_context():
+
+    # Cria as tabelas que ainda não existem
     db.create_all()
+
+    # Importa a função responsável pelo administrador
+    from criar_admin import criar_administrador
+
+    # Cria o administrador caso esteja configurado
+    # e ainda não exista no banco
+    criar_administrador()
 
 
 # Execução local
