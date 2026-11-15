@@ -1,0 +1,37 @@
+
+name: CI - Testes Automatizados
+
+on:
+  push:
+    branches: [main, revisao-tecnica-mvp]
+
+  pull_request:
+    branches: [main]
+
+jobs:
+  testes:
+    name: Build e testes do MVP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar codigo do repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install Flask Flask-SQLAlchemy Flask-Login pytest pytest-cov
+
+      - name: Verificar sintaxe do projeto
+        run: |
+          python -m compileall -q app.py models routes
+
+      - name: Executar testes automatizados
+        run: |
+          python -m pytest tests/test_movimentacoes.py -v --cov=routes.movimentacao_routes --cov-report=term-missing -p no:cacheprovider
