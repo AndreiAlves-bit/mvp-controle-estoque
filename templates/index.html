@@ -1196,8 +1196,20 @@ function renderStockRows() {
     return;
   }
 
-  for (const produto of Object.values(inventory)) {
-    const baixo = produto.qty <= produto.min;
+  const produtosReposicao = Object.values(inventory).filter(
+    produto => produto.qty <= produto.min
+  );
+
+  if (produtosReposicao.length === 0) {
+    const linha = tbody.insertRow();
+    const celula = linha.insertCell();
+    celula.colSpan = 4;
+    celula.textContent = 'Nenhum produto precisa de reposição no momento.';
+    return;
+  }
+
+  for (const produto of produtosReposicao) {
+    const baixo = true;
     const linha = tbody.insertRow();
 
     linha.insertCell().textContent = produto.name;
