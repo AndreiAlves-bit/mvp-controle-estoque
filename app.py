@@ -1,6 +1,7 @@
 
 import os
-from flask import Flask, render_template
+
+from flask import Flask, render_template, jsonify, request
 from flask_login import LoginManager
 from extensions import db
 
@@ -17,42 +18,70 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Configurações de segurança dos cookies
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = (
+    os.environ.get("RENDER") == "true"
+)
+
 # Inicialização do banco
 db.init_app(app)
 
-# Login
+# Configuração do Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "login"
 
 # Importação dos modelos
-from models import Produto, Venda, ItemVenda, MovimentacaoEstoque, Usuario
-
-# Importação e registro das rotas de produtos
-from routes.produto_routes import produto_routes
-app.register_blueprint(produto_routes)
-
-# Importação e registro das rotas de movimentações
-from routes.movimentacao_routes import movimentacao_routes
-app.register_blueprint(movimentacao_routes)
+from models import (
+    Produto,
+    Venda,
+    ItemVenda,
+    MovimentacaoEstoque,
+    Usuario
+)
 
 
 @login_manager.user_loader
 def carregar_usuario(usuario_id):
-    return db.session.get(Usuario, int(usuario_id))
+    try:
+        return db.session.get(Usuario, int(usuario_id))
+    except (ValueError, TypeError):
+        return None
 
 
+# Resposta para acessos não autorizados
+@login_manager.unauthorized_handler
+def acesso_nao_autorizado():
+    return jsonify({
+        "erro": "Acesso não autorizado. Faça login."
+    }), 401
+
+
+# Importação das rotas
+from routes.produto_routes import produto_routes
+from routes.movimentacao_routes import movimentacao_routes
+from routes.auth_routes import auth_routes
+
+# Registro dos Blueprints
+app.register_blueprint(produto_routes)
+app.register_blueprint(movimentacao_routes)
+app.register_blueprint(auth_routes)
+
+
+# Página principal
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-# Criação das tabelas do banco de dados
-# Funciona tanto localmente quanto no Render
+# Inicialização das tabelas
 with app.app_context():
     db.create_all()
 
 
 # Execução local
 if __name__ == "__main__":
-    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
+    app.run(
+        debug=os.environ.get("FLASK_DEBUG") == "1"
+    )
