@@ -1,4 +1,5 @@
 
+import os
 from flask import Flask, render_template
 from flask_login import LoginManager
 from extensions import db
@@ -6,8 +7,14 @@ from extensions import db
 app = Flask(__name__)
 
 # Configurações do sistema
-app.config["SECRET_KEY"] = "chave-temporaria-desenvolvimento"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///estoque.db"
+app.config["SECRET_KEY"] = os.environ.get(
+    "SECRET_KEY", "chave-temporaria-desenvolvimento"
+)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL", "sqlite:///estoque.db"
+)
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Inicialização do banco
@@ -40,8 +47,12 @@ def index():
     return render_template("index.html")
 
 
-if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
+# Criação das tabelas do banco de dados
+# Funciona tanto localmente quanto no Render
+with app.app_context():
+    db.create_all()
 
-    app.run(debug=True)
+
+# Execução local
+if __name__ == "__main__":
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
