@@ -14,8 +14,8 @@ def criar_administrador():
         print("Administrador não configurado.")
         return
 
-    if len(senha) < 12:
-        print("A senha administrativa deve ter pelo menos 12 caracteres.")
+    if len(senha) < 6:
+        print("A senha administrativa deve ter pelo menos 6 caracteres.")
         return
 
     usuario = Usuario.query.filter_by(email=email).first()
