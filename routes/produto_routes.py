@@ -1,5 +1,6 @@
 
 from flask import Blueprint, request, jsonify
+from flask_login import login_required
 from extensions import db
 from models.produto import Produto
 
@@ -8,6 +9,7 @@ produto_routes = Blueprint("produtos", __name__)
 
 # Listar todos os produtos cadastrados
 @produto_routes.route("/produtos", methods=["GET"])
+@login_required
 def listar_produtos():
     produtos = Produto.query.all()
 
@@ -26,6 +28,7 @@ def listar_produtos():
 
 # Cadastrar novos produtos
 @produto_routes.route("/produtos", methods=["POST"])
+@login_required
 def cadastrar_produto():
     dados = request.get_json(silent=True)
 
@@ -112,6 +115,7 @@ def cadastrar_produto():
 
 # Listar apenas produtos que precisam de reposição
 @produto_routes.route("/produtos/reposicao", methods=["GET"])
+@login_required
 def listar_produtos_reposicao():
     produtos = Produto.query.filter(
         Produto.quantidade <= Produto.estoque_minimo
