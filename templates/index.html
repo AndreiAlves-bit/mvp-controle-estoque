@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Controle de Estoque</title>
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
 <style>
 :root {
@@ -941,6 +942,14 @@ async function carregarProdutos() {
   }
 }
 
+// Token CSRF gerado pelo Flask-WTF ao renderizar esta página
+function csrfHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+  };
+}
+
 // LOGIN COM SESSÃO NO SERVIDOR
 async function conferirSessao() {
   try {
@@ -966,7 +975,7 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
     const resposta = await fetch('/api/login', {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({
         email: document.getElementById('email').value.trim(),
         senha: document.getElementById('password').value
@@ -988,7 +997,7 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
 async function logout() {
   try {
     const resposta = await fetch('/api/logout', {
-      method: 'POST', credentials: 'same-origin'
+      method: 'POST', credentials: 'same-origin', headers: csrfHeaders()
     });
     if (!resposta.ok) throw new Error('Não foi possível encerrar a sessão.');
     showScreen('loginScreen');
@@ -1032,7 +1041,7 @@ document.getElementById('productForm').addEventListener('submit', async e => {
   try {
     const resposta = await fetch('/produtos', {
       method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: csrfHeaders(),
       body: JSON.stringify({ nome, descricao, preco, quantidade, estoque_minimo })
     });
     const dados = await resposta.json();
@@ -1139,9 +1148,8 @@ document.getElementById('operationForm')
     try {
       const resposta = await fetch('/movimentacoes', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        credentials: 'same-origin',
+        headers: csrfHeaders(),
         body: JSON.stringify({
           produto_id: Number(produtoId),
           tipo: operation,
