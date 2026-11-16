@@ -1,5 +1,6 @@
 
 from flask import Blueprint, request, jsonify
+from flask_login import login_required
 from extensions import db
 from models.produto import Produto
 from models.venda import Venda, ItemVenda
@@ -9,6 +10,7 @@ movimentacao_routes = Blueprint("movimentacoes", __name__)
 
 
 @movimentacao_routes.route("/movimentacoes", methods=["POST"])
+@login_required
 def registrar_movimentacao():
     dados = request.get_json(silent=True) or {}
 
@@ -16,23 +18,33 @@ def registrar_movimentacao():
         produto_id = int(dados.get("produto_id"))
         quantidade = int(dados.get("quantidade"))
     except (TypeError, ValueError):
-        return jsonify({"erro": "Produto e quantidade devem ser números inteiros."}), 400
+        return jsonify({
+            "erro": "Produto e quantidade devem ser números inteiros."
+        }), 400
 
     tipo = dados.get("tipo")
 
     if tipo not in ("entrada", "venda"):
-        return jsonify({"erro": "Tipo deve ser entrada ou venda."}), 400
+        return jsonify({
+            "erro": "Tipo deve ser entrada ou venda."
+        }), 400
 
     if quantidade <= 0:
-        return jsonify({"erro": "A quantidade deve ser maior que zero."}), 400
+        return jsonify({
+            "erro": "A quantidade deve ser maior que zero."
+        }), 400
 
     produto = db.session.get(Produto, produto_id)
 
     if produto is None:
-        return jsonify({"erro": "Produto não encontrado."}), 404
+        return jsonify({
+            "erro": "Produto não encontrado."
+        }), 404
 
     if tipo == "venda" and quantidade > produto.quantidade:
-        return jsonify({"erro": "Estoque insuficiente."}), 400
+        return jsonify({
+            "erro": "Estoque insuficiente."
+        }), 400
 
     if tipo == "entrada":
         produto.quantidade += quantidade
@@ -66,7 +78,9 @@ def registrar_movimentacao():
         db.session.commit()
     except Exception:
         db.session.rollback()
-        return jsonify({"erro": "Não foi possível salvar a movimentação."}), 500
+        return jsonify({
+            "erro": "Não foi possível salvar a movimentação."
+        }), 500
 
     return jsonify({
         "mensagem": "Movimentação registrada com sucesso!",
