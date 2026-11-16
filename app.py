@@ -4,6 +4,7 @@ import os
 from flask import Flask, render_template, jsonify
 from flask_login import LoginManager
 from extensions import db
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 
