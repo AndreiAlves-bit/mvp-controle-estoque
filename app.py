@@ -3,8 +3,8 @@ import os
 
 from flask import Flask, render_template, jsonify
 from flask_login import LoginManager
-from extensions import db
 from flask_wtf.csrf import CSRFProtect
+from extensions import db
 
 app = Flask(__name__)
 
@@ -28,6 +28,10 @@ app.config["SESSION_COOKIE_SECURE"] = (
 
 # Inicialização do banco
 db.init_app(app)
+
+# Preparação da proteção contra CSRF
+# A ativação será feita após atualizar o frontend
+csrf = CSRFProtect()
 
 # Configuração do Flask-Login
 login_manager = LoginManager()
